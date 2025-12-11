@@ -1,0 +1,9 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vietnam-heritage-api"
+version = "1.0.0"
+description = "Vietnam Heritage AI REST API with RAG"
+requires-python = ">=3.9"

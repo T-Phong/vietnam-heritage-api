@@ -1,0 +1,4 @@
+# Render.com Pre-installation setup
+# Ensures pip and setuptools are up-to-date before installing requirements
+
+pip install --upgrade pip setuptools wheel
