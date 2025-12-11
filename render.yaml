@@ -3,7 +3,7 @@ services:
     name: vietnam-heritage-api
     env: python
     plan: standard
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
+    buildCommand: bash build.sh
     startCommand: gunicorn app:app --workers 1 --worker-class sync --timeout 120 --max-requests 10
     envVars:
       - key: GROQ_API_KEY
