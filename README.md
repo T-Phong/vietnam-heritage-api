@@ -189,6 +189,13 @@ fetch("https://vietnam-heritage-api-xxxx.onrender.com/ask", {
 - **RAM yêu cầu**: ≥ 1GB (FAISS + embedding models cần nhiều RAM)
 - **CPU**: Tối thiểu 0.5 vCPU
 
+## Khắc Phục Sự Cố
+
+### Build Error: "Cannot import 'setuptools.build_meta'"
+**Nguyên nhân**: Phiên bản pip trên Render cũ
+**Giải pháp**: Đã thêm `pip install --upgrade pip setuptools wheel` vào build command trong `render.yaml`
+
+
 ## Cấu trúc project
 
 ```
