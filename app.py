@@ -1,8 +1,22 @@
 import os
 from flask import Flask, request, jsonify
-from main import ask_with_context
+from main import ask_with_context, load_dataset_and_index
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Preload models and data when the app starts (not in request handlers)
+@app.before_request
+def before_request():
+    """Load dataset and models before first request"""
+    if not hasattr(app, 'initialized'):
+        logger.info("Initializing app: Loading dataset and models...")
+        load_dataset_and_index()
+        app.initialized = True
+        logger.info("App initialization complete!")
 
 @app.route('/ask', methods=['POST'])
 def ask_api():

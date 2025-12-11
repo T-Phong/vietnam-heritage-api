@@ -6,6 +6,11 @@ import torch
 from datasets import load_dataset
 from groq import Groq
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Get API key from environment variable
 groq_api_key = os.environ.get("GROQ_API_KEY")
@@ -13,38 +18,78 @@ if not groq_api_key:
     raise ValueError("GROQ_API_KEY environment variable is not set")
 
 client = Groq(api_key=groq_api_key)
-### Block 3: Load dataset từ Hugging Face
-dataset = load_dataset("synguyen1106/vietnam_heritage_embeddings_v2", split="train")
 
-# Chuyển vector embeddings sang numpy float32
-vectors = np.array(dataset['embedding']).astype("float32")
+# Global variables for lazy loading
+_dataset = None
+_vectors = None
+_metadata = None
+_ids = None
+_index = None
+_model = None
+_reranker = None
 
-# Tách metadata (loại bỏ id, slug, vector)
-metadata = [
-    {k:v for k,v in dataset[i].items() if k not in ['embedding','id','slug']}
-    for i in range(len(dataset))
-]
-ids = [dataset[i]['id'] for i in range(len(dataset))]
-print(f"Loaded {len(ids)} items from dataset.")
-### Block 4: Tạo FAISS CPU index
-d = vectors.shape[1]  # dimension của vector
-index = faiss.IndexFlatL2(d)  # FAISS CPU
-index.add(vectors)
-print("Number of vectors in FAISS index:", index.ntotal)
-model = SentenceTransformer("all-MiniLM-L6-v2")  # CPU, hoặc device='cuda' nếu muốn GPU
+def load_dataset_and_index():
+    """Lazy load dataset and FAISS index"""
+    global _dataset, _vectors, _metadata, _ids, _index
+    
+    if _index is not None:
+        logger.info("Dataset and FAISS index already loaded, skipping...")
+        return
+    
+    logger.info("Loading dataset from Hugging Face...")
+    _dataset = load_dataset("synguyen1106/vietnam_heritage_embeddings_v2", split="train")
+    
+    logger.info("Processing vectors...")
+    _vectors = np.array(_dataset['embedding']).astype("float32")
+    
+    logger.info("Extracting metadata...")
+    _metadata = [
+        {k:v for k,v in _dataset[i].items() if k not in ['embedding','id','slug']}
+        for i in range(len(_dataset))
+    ]
+    _ids = [_dataset[i]['id'] for i in range(len(_dataset))]
+    
+    logger.info(f"Loaded {len(_ids)} items from dataset.")
+    
+    logger.info("Creating FAISS index...")
+    d = _vectors.shape[1]
+    _index = faiss.IndexFlatL2(d)
+    _index.add(_vectors)
+    logger.info(f"FAISS index created with {_index.ntotal} vectors")
+
+def get_model():
+    """Lazy load embedding model"""
+    global _model
+    if _model is None:
+        logger.info("Loading embedding model...")
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _model
+
+def get_reranker():
+    """Lazy load reranker model"""
+    global _reranker
+    if _reranker is None:
+        logger.info("Loading reranker model...")
+        from sentence_transformers import CrossEncoder
+        _reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+    return _reranker
 ### Block 6: RAG query function
 def retrieve_context(query, k=2):
+    # Ensure dataset and models are loaded
+    load_dataset_and_index()
+    model = get_model()
+    
     # Encode query
     query_vec = model.encode([query], convert_to_numpy=True).astype("float32")
 
     # Search FAISS
-    distances, indices = index.search(query_vec, k)
+    distances, indices = _index.search(query_vec, k)
 
     results = []
     for i, idx in enumerate(indices[0]):
         idx = int(idx)  # ép sang int để dataset HF nhận
         result = {
-            "metadata": metadata[idx]
+            "metadata": _metadata[idx]
         }
         results.append(result)
     return results
@@ -176,10 +221,6 @@ class QueryRewriter:
 
         return response.strip()
 
-from sentence_transformers import CrossEncoder
-
-# Load model Reranker (nhẹ, chạy CPU được)
-reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 def format_metadata_list_to_context(metadata_list):
     """
     Chuyển đổi danh sách metadata (List[Dict]) thành văn bản ngữ cảnh (String).
@@ -245,6 +286,9 @@ def format_metadata_list_to_context(metadata_list):
     return full_context_text
 
 def advanced_search(query, keyword):
+    load_dataset_and_index()
+    reranker = get_reranker()
+    
     result = []
     for r in keyword:
         result +=retrieve_context(r, k=10)

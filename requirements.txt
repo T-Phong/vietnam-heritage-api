@@ -7,3 +7,4 @@ groq==0.4.1
 flask==2.3.2
 python-dotenv==1.0.0
 gunicorn==21.2.0
+werkzeug==2.3.6

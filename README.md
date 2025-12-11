@@ -183,8 +183,11 @@ fetch("https://vietnam-heritage-api-xxxx.onrender.com/ask", {
 
 ## Giới hạn
 
-- Plan miễn phí trên Render.com sẽ spin down sau 15 phút không hoạt động
-- Thời gian xử lý tối đa: 60 giây
+- **Render.com Plan**: Sử dụng **Standard Plan** hoặc cao hơn (Free Plan không đủ RAM/CPU)
+- **Thời gian khởi động**: ~30-60 giây (lần đầu load dataset và models)
+- **Thời gian xử lý**: 120 giây trên một request
+- **RAM yêu cầu**: ≥ 1GB (FAISS + embedding models cần nhiều RAM)
+- **CPU**: Tối thiểu 0.5 vCPU
 
 ## Cấu trúc project
 
