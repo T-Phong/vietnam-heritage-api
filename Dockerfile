@@ -25,4 +25,7 @@ EXPOSE 7860
 
 # 8. Lệnh chạy server
 # "app:app" nghĩa là: trong file app.py, tìm object tên là app (biến Flask)
-CMD ["gunicorn", "-b", "0.0.0.0:7860", "app:app", "--timeout", "120", "--workers", "2"]
+CMD ["/path/to/venv/bin/gunicorn", "-w", "4", "main:app"]
+
+# Hoặc kích hoạt venv trước (ít dùng trong CMD):
+CMD [ "/bin/bash", "-c", "source venv/bin/activate && gunicorn -w 4 main:app" ]
