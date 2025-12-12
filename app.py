@@ -43,9 +43,18 @@ def ask_api():
         answer = rewriter.ask_with_context(question, history_message)
         
         return jsonify({
-            "question": question,
-            "answer": answer,
-            "status": "success"
+            "id": "chatcmpl-123",
+            "object": "chat.completion",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": answer
+                    },
+                    "finish_reason": "stop"
+                }
+            ]
         }), 200
     
     except Exception as e:
