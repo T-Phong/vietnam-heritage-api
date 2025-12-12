@@ -137,6 +137,7 @@ class QueryRewriter:
           2. NGẮN GỌN: Loại bỏ hoàn toàn các từ ngữ xã giao thừa thãi (ví dụ: "dạ cho em hỏi", "làm ơn", "với ạ", "mình muốn biết là"...).
           3. TRỰC DIỆN: Biến nó thành một câu truy vấn thông tin chuẩn xác.
           4. CHỈ TRẢ VỀ TIẾNG VIỆT CÓ DẤU!
+          5. LƯU Ý: NẾU ĐÂY CHỈ LÀ 1 CÂU GIAO TIẾP BÌNH THƯỜNG NHƯ CHÀO HỎI, HÃY TRẢ VỀ NGUYÊN VĂN NHƯ VẬY.
 
           QUY TẮC:
           - Giữ nguyên ý định của người dùng.

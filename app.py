@@ -29,7 +29,7 @@ def ask_api():
     """    
     try:
         data = request.get_json()
-        if islog == "1":
+        if islog == "1" or islog == 1:
             print("data",data)
         all_messages = data.get("messages", [])
 
