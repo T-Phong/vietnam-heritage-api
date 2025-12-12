@@ -230,6 +230,7 @@ class QueryRewriter:
             - Nếu hỏi về thời gian/địa điểm: Tìm trong mục [THÔNG TIN CHI TIẾT].
             - Nếu hỏi về bài học/giá trị: Tìm trong mục [GIÁ TRỊ & LIÊN QUAN] hoặc [TỔNG QUAN].
             3. Tổng hợp: Nếu câu hỏi yêu cầu liệt kê (VD: "Có những nhân vật nào trong tài liệu?"), hãy đọc tên của tất cả hồ sơ.
+            4. NẾU KHÔNG CÓ DỮ LIỆU NGỮ CẢNH VÀ CÂU HỎI NGƯỜI DÙNG CHỈ LÀ NHỮNG CÂU GIAO TIẾP BÌNH THƯỜNG (NHƯ CHÀO HỎI), HÃY TRẢ LỜI NGƯỜI DÙNG VỚI TƯ CÁCH LÀ MỘT TRỢ LÝ LỊCH SỰ VÀ THÂN THIỆN.
             
             QUY TẮC TRẢ LỜI:
             - Trả lời ngắn gọn, đúng trọng tâm.
