@@ -4,7 +4,7 @@ import faiss
 from sentence_transformers import SentenceTransformer
 from datasets import load_dataset
 ### Block 3: Load dataset từ Hugging Face
-dataset = load_dataset("synguyen1106/vietnam_heritage_embeddings_v2", split="train")
+dataset = load_dataset("synguyen1106/vietnam_heritage_embeddings_v4", split="train")
 
 # Chuyển vector embeddings sang numpy float32
 vectors = np.array(dataset['embedding']).astype("float32")
