@@ -11,7 +11,7 @@ app = Flask(__name__)
 # Khởi tạo QueryRewriter (chứa ask_with_context)
 rewriter = QueryRewriter()
 
-@app.route('/ask', methods=['POST'])
+@app.route('/v1/chat/completions', methods=['POST'])
 def ask_api():
     """
     Main endpoint - Gọi ask_with_context
@@ -64,7 +64,7 @@ def ask_api():
             "status": "error"
         }), 500
 
-@app.route('/lstmodel', methods=['GET'])
+@app.route('/v1/models', methods=['GET'])
 def lstmodel():
     return jsonify({
         "object": "list",
