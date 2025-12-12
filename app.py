@@ -1,6 +1,7 @@
 """
 REST API cho Vietnam Heritage RAG System
 """
+import uuid
 from flask import Flask, request, jsonify
 from rewrite import QueryRewriter
 import os
@@ -43,7 +44,7 @@ def ask_api():
         answer = rewriter.ask_with_context(question, history_message)
         
         return jsonify({
-            "id": "chatcmpl-123",
+            "id": str(uuid.uuid4()),
             "object": "chat.completion",
             "choices": [
                 {
