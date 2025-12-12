@@ -45,3 +45,12 @@ curl -X POST http://localhost:5000/ask \
   -H "Content-Type: application/json" \
   -d '{"question": "Nguyễn Trãi là ai?"}'
 ```
+title: CultureBot
+emoji: 🏃
+colorFrom: red
+colorTo: pink
+sdk: docker
+pinned: false
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
