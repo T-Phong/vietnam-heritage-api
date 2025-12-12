@@ -64,6 +64,17 @@ def ask_api():
             "status": "error"
         }), 500
 
+@app.route('/lstmodel', methods=['GET'])
+def lstmodel():
+    return jsonify({
+        "object": "list",
+        "data": [
+            {"id": "Model-1", "object": "model", "owned_by": "owner"},
+            {"id": "Model-2", "object": "model", "owned_by": "owner"}
+            ]
+    }), 200
+        
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -86,7 +97,8 @@ def home():
                 }
             },
             "GET /health": "Health check endpoint",
-            "GET /": "API documentation"
+            "GET /": "API documentation",
+            "GET /lstmodel": "List available models"
         },
         "example": {
             "url": "/ask",
