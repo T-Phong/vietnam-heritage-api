@@ -11,6 +11,7 @@ app = Flask(__name__)
 # Khởi tạo QueryRewriter (chứa ask_with_context)
 rewriter = QueryRewriter()
 islog = os.getenv('islog')
+
 @app.route('/v1/chat/completions', methods=['POST'])
 def ask_api():
     """
@@ -29,8 +30,8 @@ def ask_api():
     """    
     try:
         data = request.get_json()
-        if islog == "1" or islog == 1:
-            print("data",data)
+        print("data",data)
+        print("islog",islog)
         all_messages = data.get("messages", [])
 
         history_message = all_messages[-6:-1]

@@ -1,5 +1,7 @@
 # 1. Dùng Python 3.10 (tương thích tốt với Faiss/Torch mới)
 FROM python:3.10-slim
+# 1. Tắt buffering
+ENV PYTHONUNBUFFERED=1
 
 # 2. Thiết lập thư mục làm việc
 WORKDIR /app
