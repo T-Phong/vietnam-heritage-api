@@ -59,16 +59,19 @@ class QueryRewriter:
           User: "Giới thiệu về Vịnh Hạ Long."
           Assistant: "Vịnh Hạ Long là di sản thiên nhiên thế giới tại Quảng Ninh..."
           Input: "Ở đó có những hang động nào đẹp?"
-          Output: Vịnh Hạ Long, hang động
+          Output: Vịnh Hạ Long
           (Giải thích: "Ở đó" được hiểu là "Vịnh Hạ Long").
 
           Ví dụ 2:
           Lịch sử:
-          User: "Shark Bình sinh năm bao nhiêu?"
-          Assistant: "Shark Bình sinh năm 1981."
-          Input: "Vợ của ông ấy tên là gì?"
-          Output: Shark Bình, Vợ
-          (Giải thích: "Ông ấy" được thay bằng "Shark Bình").
+          User: "Các lễ hội nổi tiếng ở VN"
+          Assistant: "Việt Nam có nhiều lễ hội nổi tiếng, trong đó có:
+            - **Lễ hội Lim**: Là lễ hội lớn của tỉnh Bắc Ninh, được tổ chức vào ngày 13 tháng Giêng hằng năm trên địa bàn huyện Tiên Du. Đây là nét kết tinh độc đáo của vùng văn hoá Kinh Bắc, với trung tâm là các hoạt động ca hát Quan họ Bắc Ninh.
+            - Ngoài ra, còn có nhiều lễ hội khác như lễ hội đua thuyền, lễ hội đền, chùa,... khắp cả nước.
+            Nếu bạn muốn tìm hiểu thêm về các lễ hội khác, vui lòng cho tôi biết!"
+          Input: "Ở đó có gì hay?"
+          Output: "Lễ hội Lim, lễ hội đua thuyền, lễ hội đền"
+          (Giải thích: "Ở đó" được hiểu là "Lễ hội Lim, lễ hội đua thuyền, lễ hội đền").
 
           Ví dụ 3:
           Lịch sử: (Rỗng)
@@ -126,14 +129,18 @@ class QueryRewriter:
         # --- QUAN TRỌNG: HARD LIMIT ---
         return keywords[:3]
 
-    def rewrite(self, long_query,keywords):
+    def rewrite_query(self, long_query,history):
         """Dùng LLM để tóm tắt query dài thành keyword tìm kiếm"""
+        conversation_str = ""
+        for turn in history:
+            conversation_str += f"{turn['role'].capitalize()}: {turn['content']}\n"
+
         CONCISE_REWRITE_PROMPT = """
           Bạn là chuyên gia biên tập câu hỏi tìm kiếm (Search Query Editor).
 
           NHIỆM VỤ:
-          Viết lại câu hỏi của người dùng dựa trên "Câu hỏi gốc" và "Từ khóa gợi ý" sao cho:
-          1. ĐẦY ĐỦ Ý: Nếu câu hỏi thiếu chủ ngữ hoặc dùng đại từ (nó, cái này...), hãy chèn từ khóa vào để làm rõ.
+          Viết lại câu hỏi của người dùng dựa trên "Câu hỏi gốc" và "Lịch sử hội thoại" sao cho:
+          1. ĐẦY ĐỦ Ý: Nếu câu hỏi thiếu chủ ngữ hoặc dùng đại từ (nó, cái này...), hãy đọc lịch sử để bổ sung cho đầy đủ.
           2. NGẮN GỌN: Loại bỏ hoàn toàn các từ ngữ xã giao thừa thãi (ví dụ: "dạ cho em hỏi", "làm ơn", "với ạ", "mình muốn biết là"...).
           3. TRỰC DIỆN: Biến nó thành một câu truy vấn thông tin chuẩn xác.
           4. CHỈ TRẢ VỀ TIẾNG VIỆT CÓ DẤU!
@@ -141,36 +148,43 @@ class QueryRewriter:
 
           QUY TẮC:
           - Giữ nguyên ý định của người dùng.
+          - Nếu câu hỏi có nội dung mang tính tìm hiểu thêm (ví dụ: còn gì khác, thêm, ngoài ra, v.v...), hãy giữ nguyên ý đó.
           - TUYỆT ĐỐI KHÔNG trả lời câu hỏi.
-          - Chỉ trả về 1 dòng kết quả là câu trả lời đã được viết lại.
+          - Chỉ trả về 1 dòng kết quả là câu hỏi đã được viết lại.
 
           VÍ DỤ MẪU:
           ---
-          Input: "Dạ anh ơi cho em hỏi xíu là cái con này nó pin trâu không ạ?"
-          Keywords: [Samsung S23 Ultra, pin]
-          Output: Pin Samsung S23 Ultra có tốt không?
-          (Giải thích: Loại bỏ "Dạ anh ơi...", thay "con này" bằng "Samsung S23 Ultra").
+          Lịch sử:
+          User: "Giới thiệu về Vịnh Hạ Long."
+          Assistant: "Vịnh Hạ Long là di sản thiên nhiên thế giới tại Quảng Ninh..."
+          Input: "Thuộc tỉnh nào?"
+          Output: Vịnh Hạ Long thuộc tỉnh nào?
+          (Giải thích: "Thuộc tỉnh nào?" dùng đại từ thay thế, cần bổ sung thành câu đầy đủ).
 
-          Input: "Cách nấu món bò kho sao cho ngon nhất vậy shop?"
-          Keywords: [Bò kho, cách nấu]
-          Output: Cách nấu Bò kho ngon nhất.
-          (Giải thích: Câu hỏi đã có đầy đủ thông tin chủ ngữ và vị ngữ nên chỉ cần tóm tắt lại mà không cần dựa vào keywords)
-
-          Input: "Năm sinh?"
-          Keywords: ['Nguyễn Trãi']
-          Output: Nguyễn trãi sinh năm bao nhiêu?
+          Lịch sử:
+          User: "các địa điểm du lịch ở miền bắc"
+          Assistant: "Các địa điểm du lịch ở miền Bắc mà bạn có thể tham khảo bao gồm:
+                        1. **Hồ Ba Bể** (Bắc Kạn): Hồ nước ngọt tự nhiên lớn nhất Việt Nam, nằm trong Vườn quốc gia Ba Bể, nổi tiếng với cảnh quan sơn thủy hữu tình và hệ sinh thái đa dạng
+                        2. **Đền Ngọc Sơn** (Hà Nội): Một ngôi đền tọa lạc trên đảo Ngọc, thuộc Hồ Hoàn Kiếm, Hà Nội, được xây dựng vào thế kỷ XIX, thờ Văn Xương Đế Quân, Quan Công và Trần Hưng Đạo.
+                        3. **Hồ Hoàn Kiếm** (Hà Nội): Một biểu tượng văn hóa và lịch sử của thủ đô Hà Nội.
+                        Những địa điểm này thể hiện sự đa dạng về văn hóa, lịch sử và cảnh quan thiên nhiên của miền Bắc Việt Nam."
+          Input: "còn chỗ nào khác không?"
+          Output: "Ngoài Hồ Ba Bể, Đền Ngọc Sơn và Hồ Hoàn Kiếm, miền Bắc còn có nhiều địa điểm du lịch khác?"
+          (Giải thích: "Thuộc tỉnh nào?" dùng đại từ thay thế, cần bổ sung thành câu đầy đủ).
           ---
 
           HÃY BẮT ĐẦU:
           """
         
-        keywords_str = ", ".join(keywords) if keywords else "Không có"
 
         user_content = f"""
-          Câu hỏi gốc: "{long_query}"
-          Keywords: [{keywords_str}]
+          ### Lịch sử hội thoại:
+          {conversation_str}
 
-          Output:"""
+          ### Câu hỏi gốc (Input):
+          "{long_query}"
+
+          ### Output (Câu hỏi đã được viết lại):"""
 
         #model pull
         # messages = [
@@ -209,35 +223,53 @@ class QueryRewriter:
         #print(completion.choices[0].message.content)
         return completion.choices[0].message.content.strip()
     
+    # Thêm vào class QueryRewriter trong rewrite.py
+    def generate_hypothetical_answer(self, query):
+        HYDE_PROMPT = f"""Bạn là một trợ lý AI am hiểu văn hóa Việt Nam. Hãy viết một đoạn văn trả lời chi tiết cho câu hỏi sau đây. Đoạn văn này chỉ dùng để làm tài liệu giả định cho việc tìm kiếm, không cần phải chính xác 100%.
+
+        Câu hỏi: "{query}"
+
+        Đoạn văn trả lời giả định:"""
+        
+        completion = client.chat.completions.create(
+            model="meta-llama/llama-4-scout-17b-16e-instruct", # Hoặc model bạn chọn
+            messages=[{"role": "user", "content": HYDE_PROMPT}]
+        )
+        hypothetical_answer = completion.choices[0].message.content.strip()
+        return hypothetical_answer
+
+
     def ask_with_context(self,question,history):
         
         # get key word
         keyword = self.keyword(question,history)
         print(f"\n--- keyword: {keyword} ---")
-        
+        print(type(keyword))
         # rewrite question with key word
-        q_rewrite = self.rewrite(question,keyword)
+        q_rewrite = self.rewrite_query(question,history)
         print(f"\n--- q_rewrite: {q_rewrite} ---")
+        fake_answer = self.generate_hypothetical_answer(q_rewrite)
+        print(f"\n--- fake_answer: {fake_answer} ---")
         # get top 30 RAG and reranking by question rewrite and keyword then get 5
-        p = advanced_search(q_rewrite,keyword)
-        RAG_SYSTEM_PROMPT = """
-            Bạn là Trợ lý AI Thông minh chuyên về Văn hóa, Lịch sử và Văn học Việt Nam.
-            Nhiệm vụ: Trả lời câu hỏi người dùng dựa trên "DANH SÁCH HỒ SƠ" được cung cấp trong Context.
+        p = advanced_search(fake_answer,keyword) 
+        print(f"\n--- context p: {p} ---")
+        RAG_SYSTEM_PROMPT = """Bạn là một trợ lý AI chuyên trả lời các câu hỏi về văn hóa các dân tộc Việt Nam.
+                NHIỆM VỤ CỐT LÕI: Trả lời câu hỏi của người dùng CHỈ DỰA VÀO thông tin được cung cấp trong phần "Dữ liệu Ngữ cảnh" dưới đây. TUYỆT ĐỐI không sử dụng bất kỳ kiến thức nào bạn đã được huấn luyện trước đó.
+
+                HƯỚNG DẪN XỬ LÝ:
+                1.  **Phân tích câu hỏi**: Đọc kỹ câu hỏi của người dùng để hiểu rõ họ đang muốn biết thông tin gì và về đối tượng nào (ví dụ: lễ hội, trang phục, phong tục...).
+                2.  **Tra cứu trong ngữ cảnh**: Tìm kiếm thông tin chính xác trong "Dữ liệu Ngữ cảnh" để trả lời câu hỏi.
+                    *   Nếu câu hỏi yêu cầu so sánh (ví dụ: "so sánh A và B"), hãy tìm thông tin về cả A và B trong ngữ cảnh và chỉ ra các điểm tương đồng và khác biệt.
+                    *   Nếu câu hỏi yêu cầu liệt kê (ví dụ: "kể tên các lễ hội..."), hãy tổng hợp tất cả các đối tượng phù hợp có trong ngữ cảnh.
+                3.  **Tổng hợp và trả lời**: Dựa trên thông tin tìm được, hãy soạn một câu trả lời ngắn gọn, chính xác và đi thẳng vào vấn đề.
+
+                QUY TẮC BẮT BUỘC:
+                -   **TRUNG THỰC VỚI NGỮ CẢNH**: Mọi thông tin trong câu trả lời phải có nguồn gốc trực tiếp từ "Dữ liệu Ngữ cảnh". Không suy diễn, không thêm thắt, không bịa đặt.
+                -   **TRƯỜNG HỢP KHÔNG CÓ THÔNG TIN**: Nếu "Dữ liệu Ngữ cảnh" không chứa thông tin để trả lời câu hỏi, hãy trả lời một cách lịch sự rằng: "Xin lỗi, tôi không tìm thấy thông tin về vấn đề này trong tài liệu được cung cấp."
+                -   **TRƯỜNG HỢP GIAO TIẾP**: Nếu câu hỏi của người dùng chỉ là lời chào hỏi hoặc câu nói mang tính xã giao (ví dụ: "xin chào", "cảm ơn"), hãy đáp lại một cách thân thiện với vai trò là một trợ lý AI.
+                -   **NGÔN NGỮ**: Sử dụng tiếng Việt có dấu, văn phong tự nhiên, lịch sự.
+                """
             
-            HƯỚNG DẪN XỬ LÝ:
-            1. Xác định đối tượng: Đọc câu hỏi để biết người dùng đang hỏi về hồ sơ nào (Ví dụ: hỏi về "Nguyễn Trãi" hay "Sọ Dừa").
-            2. Tra cứu thông tin:
-            - Nếu hỏi về thời gian/địa điểm: Tìm trong mục [THÔNG TIN CHI TIẾT].
-            - Nếu hỏi về bài học/giá trị: Tìm trong mục [GIÁ TRỊ & LIÊN QUAN] hoặc [TỔNG QUAN].
-            3. Tổng hợp: Nếu câu hỏi yêu cầu liệt kê (VD: "Có những nhân vật nào trong tài liệu?"), hãy đọc tên của tất cả hồ sơ.
-            4. NẾU KHÔNG CÓ DỮ LIỆU NGỮ CẢNH VÀ CÂU HỎI NGƯỜI DÙNG CHỈ LÀ NHỮNG CÂU GIAO TIẾP BÌNH THƯỜNG (NHƯ CHÀO HỎI), HÃY TRẢ LỜI NGƯỜI DÙNG VỚI TƯ CÁCH LÀ MỘT TRỢ LÝ LỊCH SỰ VÀ THÂN THIỆN.
-            
-            QUY TẮC TRẢ LỜI:
-            - Trả lời ngắn gọn, đúng trọng tâm.
-            - Nếu thông tin không có trong bất kỳ hồ sơ nào, hãy trả lời: "Xin lỗi, tài liệu được cung cấp không chứa thông tin này."
-            - KHÔNG dùng kiến thức bên ngoài nếu không có trong hồ sơ.
-            """
-        
         # Tạo nội dung user prompt: Ghép context và câu hỏi gốc
         user_content = f"""### Context:
     {p}
