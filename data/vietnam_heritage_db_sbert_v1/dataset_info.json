@@ -1,0 +1,71 @@
+{
+  "builder_name": "json",
+  "citation": "",
+  "config_name": "default",
+  "dataset_name": "vietnam_heritage_wiki_chunks_v1",
+  "dataset_size": 137623393,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/synguyen1106/vietnam_heritage_wiki_chunks_v1@968355de0eb0716c29de7eeeadf36bd67398108e/wiki_chunks_v1.json": {
+      "num_bytes": 143963145,
+      "checksum": null
+    }
+  },
+  "download_size": 143963145,
+  "features": {
+    "combined_text": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "original_content": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "metadata": {
+      "group": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "level": {
+        "dtype": "int64",
+        "_type": "Value"
+      },
+      "path": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "section": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "topic": {
+        "dtype": "string",
+        "_type": "Value"
+      }
+    },
+    "embeddings": {
+      "feature": {
+        "dtype": "float32",
+        "_type": "Value"
+      },
+      "_type": "List"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 281586538,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 137623393,
+      "num_examples": 64124,
+      "dataset_name": "vietnam_heritage_wiki_chunks_v1"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}

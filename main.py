@@ -1,6 +1,8 @@
 """
 Main entry point để test RAG system
 """
+import pandas as pd
+from mark import evaluate_rag_pipeline
 from rag import retrieve_context
 import json
 
@@ -22,9 +24,7 @@ def main():
     
     # Test queries
     test_queries = [
-        "Nguyễn Trãi là ai?",
-        "Vịnh Hạ Long ở đâu?",
-        "Lễ hội truyền thống Việt Nam"
+        "Bánh xèo và bánh chưng khác nhau ở điểm nào?"
     ]
     
     for i, query in enumerate(test_queries, 1):
@@ -33,16 +33,9 @@ def main():
         
         try:
             # Gọi retrieve_context từ rag.py
-            results = retrieve_context(query, k=3)
-            
+            temp = advanced_search(query,['Bánh xèo','bánh chưng'])
             # In kết quả
-            for j, result in enumerate(results, 1):
-                metadata = result['metadata']
-                print(f"\n  Kết quả {j}:")
-                print(f"    Tên: {metadata.get('ten', 'N/A')}")
-                print(f"    Loại hình: {metadata.get('loai_hinh', 'N/A')}")
-                print(f"    Địa điểm: {metadata.get('dia_diem', 'N/A')}")
-                print(f"    Mô tả: {metadata.get('mo_ta', 'N/A')[:100]}...")
+            print(temp)
         
         except Exception as e:
             print(f"  ❌ Lỗi: {e}")
@@ -60,7 +53,15 @@ def interactive_mode():
     
     while True:
         query = input("\n❓ Câu hỏi: ").strip()
-        
+        keyword = []
+        print("Nhập chuỗi (nhập 'done' để kết thúc):")
+        while True:
+            nhap = input()
+            if nhap.lower() == 'done':
+                break
+            keyword.append(nhap)
+        print("Mảng của bạn:", keyword)
+
         if query.lower() in ['exit', 'quit', 'q']:
             print("👋 Tạm biệt!")
             break
@@ -70,18 +71,82 @@ def interactive_mode():
             continue
         
         try:
-            results = rewriter.ask_with_context(query,[])
-            print(f"\n📚 Tìm thấy {len(results)} kết quả:")
             
-            for i, result in enumerate(results, 1):
-                metadata = result['metadata']
-                print(f"\n  [{i}] {metadata.get('ten', 'N/A')}")
-                print(f"      📍 {metadata.get('dia_diem', 'N/A')}")
-                print(f"      📝 {metadata.get('mo_ta', 'N/A')[:150]}...")
-        
+            # rewrite question with key word
+            q_rewrite = rewriter.rewrite(query,keyword)
+            print(f"\n--- q_rewrite: {q_rewrite} ---")
+            # get top 30 RAG and reranking by question rewrite and keyword then get 5
+            p = advanced_search(q_rewrite,keyword)
+            print("\n📝 Kết quả RAG + Reranking:", p)
         except Exception as e:
             print(f"❌ Lỗi: {e}")
 
+def mark():
+    # Giả lập dữ liệu từ hệ thống RAG của bạn
+    test_cases = [
+        # CASE 1: TỐT TOÀN DIỆN (Tìm đúng, Trả lời đúng)
+        {
+            "question": "Lễ hội Gióng được UNESCO công nhận năm nào?",
+            "retrieved_contexts": [
+                "Lễ hội Gióng ở đền Phù Đổng và đền Sóc được UNESCO công nhận là Di sản văn hóa phi vật thể đại diện của nhân loại vào năm 2010.",
+                "Thánh Gióng là một trong tứ bất tử."
+            ],
+            "model_answer": "Lễ hội Gióng được UNESCO công nhận vào năm 2010.",
+            "ground_truth": "Năm 2010."
+        },
+        
+        # CASE 2: RETRIEVAL KÉM (Tìm sai tài liệu -> Bot không trả lời được hoặc bịa)
+        {
+            "question": "Nguyên liệu chính làm quả cầu trong lễ hội gieo cầu là gì?",
+            "retrieved_contexts": [
+                "Lễ hội Gióng tái hiện trận đánh giặc Ân.", # <--- Context không liên quan gì đến quả cầu
+                "Đền Hùng nằm ở Phú Thọ."
+            ],
+            "model_answer": "Quả cầu được làm bằng nhựa.", # <--- Bot bịa (Hallucination) do không có context
+            "ground_truth": "Gỗ hoặc da."
+        },
+        
+        # CASE 3: RETRIEVAL TỐT NHƯNG BOT BỊA (Hallucination)
+        {
+            "question": "Ý nghĩa của Lễ hội Đền Hùng?",
+            "retrieved_contexts": [
+                "Lễ hội Đền Hùng thể hiện lòng biết ơn sâu sắc đối với các Vua Hùng đã có công dựng nước."
+            ],
+            "model_answer": "Lễ hội Đền Hùng là để cầu mưa thuận gió hòa cho miền Tây sông nước.", # <--- Sai, không dựa vào context
+            "ground_truth": "Tưởng nhớ công lao dựng nước của các Vua Hùng."
+        }
+    ]
+
+    # --- VÒNG LẶP ĐÁNH GIÁ ---
+    results = []
+    print("Đang đánh giá hệ thống RAG...")
+
+    for i, case in enumerate(test_cases):
+        print(f"Processing case {i+1}...")
+        scores = evaluate_rag_pipeline(
+            case["question"], 
+            case["retrieved_contexts"], 
+            case["model_answer"], 
+            case["ground_truth"]
+        )
+        
+        # Gộp kết quả
+        case_result = {**case, **scores} # Merge dict
+        results.append(case_result)
+
+    # --- HIỂN THỊ KẾT QUẢ ---
+    df = pd.DataFrame(results)
+
+    # Chỉ hiện các cột quan trọng
+    display_cols = ["question", "context_score", "faithfulness_score", "correctness_score", "reason"]
+    print("\nBẢNG ĐIỂM CHI TIẾT:")
+    print(df[display_cols].to_string())
+
+    # Tính điểm tổng kết
+    print("\n--- TỔNG KẾT HIỆU SUẤT ---")
+    print(f"Độ chính xác tìm kiếm (Retrieval Accuracy): {df['context_score'].mean() * 100:.1f}%")
+    print(f"Độ trung thực (Faithfulness): {df['faithfulness_score'].mean() * 100:.1f}%")
+    print(f"Độ chính xác câu trả lời (End-to-End Accuracy): {df['correctness_score'].mean() * 100:.1f}%")
 
 if __name__ == "__main__":
     import sys
@@ -90,4 +155,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--interactive":
         interactive_mode()
     else:
-        main()
+        mark()
